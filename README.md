@@ -3,6 +3,7 @@
 This project is a complete CI/CD setup for deploying the [Docker Sample Voting App](https://github.com/dockersamples/example-voting-app) to an Azure Kubernetes Service (AKS) cluster using Azure DevOps for Continuous Integration and Argo CD for Continuous Delivery.
 
 ---
+![Architecture](./Architecture.png)
 
 ## 📦 Components
 
