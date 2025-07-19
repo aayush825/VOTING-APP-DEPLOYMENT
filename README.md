@@ -80,3 +80,5 @@ This project is a complete CI/CD setup for deploying the [Docker Sample Voting A
 
 
 ![Architecture](./FullArchitecture.png)
+![Architecture](./Appss1.png)
+![Architecture](./Appss2.png)
