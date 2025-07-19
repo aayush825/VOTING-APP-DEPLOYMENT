@@ -1,65 +1,78 @@
-# Example Voting App
+# 🗳️ Voting App Deployment on AKS using Azure DevOps & Argo CD
 
-A simple distributed application running across multiple Docker containers.
+This project is a complete CI/CD setup for deploying the [Docker Sample Voting App](https://github.com/dockersamples/example-voting-app) to an Azure Kubernetes Service (AKS) cluster using Azure DevOps for Continuous Integration and Argo CD for Continuous Delivery.
 
-## Getting started
+---
 
-Download [Docker Desktop](https://www.docker.com/products/docker-desktop) for Mac or Windows. [Docker Compose](https://docs.docker.com/compose) will be automatically installed. On Linux, make sure you have the latest version of [Compose](https://docs.docker.com/compose/install/).
+## 📦 Components
 
-This solution uses Python, Node.js, .NET, with Redis for messaging and Postgres for storage.
+- **Frontend**: Vote App (Python Flask)
+- **Backend**: Result App (Node.js)
+- **Worker**: .NET Core background processor
+- **Database**: PostgreSQL
+- **Queue**: Redis
 
-Run in this directory to build and run the app:
+---
 
-```shell
-docker compose up
-```
+## ☁️ Infrastructure Used
 
-The `vote` app will be running at [http://localhost:8080](http://localhost:8080), and the `results` will be at [http://localhost:8081](http://localhost:8081).
+| Resource           | Configuration                             |
+|--------------------|--------------------------------------------|
+| AKS Cluster        | `azuredevops` (1 node pool, Standard_A2_v2) |
+| Kubernetes Version | `1.32.5`                                    |
+| Region             | Central US                                  |
+| Container Registry | `ayushazurecicd` with 3 image repos: `votingapp`, `resultapp`, `workerapp` |
 
-Alternately, if you want to run it on a [Docker Swarm](https://docs.docker.com/engine/swarm/), first make sure you have a swarm. If you don't, run:
+---
 
-```shell
-docker swarm init
-```
+## 🔧 CI/CD Stack
 
-Once you have your swarm, in this directory run:
+### 🔹 Continuous Integration (CI)
 
-```shell
-docker stack deploy --compose-file docker-stack.yml vote
-```
+- **Azure Pipelines**:
+  - `azure-pipelines-vote.yml`
+  - `azure-pipelines-result.yml`
+  - `azure-pipelines-worker.yml`
+- **Steps**:
+  - Build Docker images
+  - Push to ACR
+  - Update Kubernetes manifests (via Bash script)
 
-## Run the app in Kubernetes
+### 🔹 Continuous Delivery (CD)
 
-The folder k8s-specifications contains the YAML specifications of the Voting App's services.
+- **Argo CD** deployed on AKS
+- GitOps approach using Azure Repos
+- Auto-sync enabled (`reconciliation.timeout: 10s`)
+- Application: `voteapp-service`
 
-Run the following command to create the deployments and services. Note it will create these resources in your current namespace (`default` if you haven't changed it.)
+---
 
-```shell
-kubectl create -f k8s-specifications/
-```
+## 🔄 CI/CD Workflow
 
-The `vote` web app is then available on port 31000 on each host of the cluster, the `result` web app is available on port 31001.
+1. Developer pushes code to Azure Repos
+2. Azure Pipeline:
+   - Builds Docker image
+   - Pushes to ACR
+   - Updates image tag in YAML manifests
+3. Argo CD:
+   - Detects Git change
+   - Syncs updated manifest
+   - Deploys new pod to AKS
 
-To remove them, run:
+---
 
-```shell
-kubectl delete -f k8s-specifications/
-```
+## 📌 How to Reproduce
 
-## Architecture
-
-![Architecture diagram](architecture.excalidraw.png)
-
-* A front-end web app in [Python](/vote) which lets you vote between two options
-* A [Redis](https://hub.docker.com/_/redis/) which collects new votes
-* A [.NET](/worker/) worker which consumes votes and stores them in…
-* A [Postgres](https://hub.docker.com/_/postgres/) database backed by a Docker volume
-* A [Node.js](/result) web app which shows the results of the voting in real time
-
-## Notes
-
-The voting application only accepts one vote per client browser. It does not register additional votes if a vote has already been submitted from a client.
-
-This isn't an example of a properly architected perfectly designed distributed app... it's just a simple
-example of the various types of pieces and languages you might see (queues, persistent data, etc), and how to
-deal with them in Docker at a basic level.
+1. **Fork/Clone this repo**
+2. **Provision Azure Resources**:
+   - Create AKS and ACR
+3. **Set up Service Connections** in Azure DevOps:
+   - ACR (Docker Registry connection)
+   - AKS (Kubernetes service connection)
+4. **Configure Agent Pool**:
+   - Use `ubuntu-latest` or custom `azureagent`
+5. **Run Pipelines** from Azure DevOps
+6. **Install ArgoCD** on AKS:
+   ```bash
+   kubectl create namespace argocd
+   kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
