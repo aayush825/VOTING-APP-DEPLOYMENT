@@ -1,0 +1,71 @@
+# Docker
+# Build and push an image to Azure Container Registry
+# https://docs.microsoft.com/azure/devops/pipelines/languages/docker
+
+trigger:
+  paths:
+    include:
+      - vote/*
+
+resources:
+- repo: self
+
+variables:
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: '5d3884db-b5c3-4dc3-a04f-416ff33f3628'
+  imageRepository: 'votingapp'
+  containerRegistry: 'ayushazurecicd.azurecr.io'
+  dockerfilePath: '$(Build.SourcesDirectory)/result/Dockerfile'
+  tag: '$(Build.BuildId)'
+
+pool:
+  name: 'azureagent'
+
+stages:
+- stage: Build
+  displayName: Build and push stage
+  jobs:
+  - job: Build
+    displayName: Build
+    steps:
+    - task: Docker@2
+      displayName: Build image 
+      inputs:
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        repository: '$(imageRepository)'
+        command: 'build'
+        Dockerfile: 'vote/Dockerfile'
+        tags: '$(tag)'
+- stage: Push
+  displayName: push stage
+  jobs:
+  - job: Push
+    displayName: Push
+    steps:
+    - task: Docker@2
+      displayName: Build image 
+      inputs:
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        repository: '$(imageRepository)'
+        command: 'push'
+        tags: '$(tag)'
+- stage: Update
+  displayName: Update
+  jobs:
+  - job: Update
+    displayName: Update
+    steps:
+    
+    # Step 1: Install dos2unix and convert the script
+    - script: |
+        sudo apt-get update
+        sudo apt-get install -y dos2unix
+        dos2unix scripts/updateK8sManifests.sh
+      displayName: "Convert line endings to Unix (LF)"
+    
+    # Step 2: Run the shell script with arguments
+    - task: ShellScript@2
+      displayName: "Run script to update K8s manifest"
+      inputs:
+        scriptPath: 'scripts/updateK8sManifests.sh'
+        args: 'vote $(imageRepository) $(tag)'
