@@ -77,3 +77,6 @@ This project is a complete CI/CD setup for deploying the [Docker Sample Voting A
    ```bash
    kubectl create namespace argocd
    kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+
+![Architecture](./FullArchitecture.png)
